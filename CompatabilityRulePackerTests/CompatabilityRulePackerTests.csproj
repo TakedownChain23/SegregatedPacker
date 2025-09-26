@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SegregatedPacker\CompatabilityRulePacker.csproj" />
+    <ProjectReference Include="..\CompatabilityRulePacker\CompatabilityRulePacker.csproj" />
   </ItemGroup>
 
   <ItemGroup>

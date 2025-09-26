@@ -5,7 +5,7 @@ VisualStudioVersion = 17.14.36518.9
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CompatabilityRulePacker", "CompatabilityRulePacker.csproj", "{162523F0-1096-48DA-9FA3-6FD4AA0C97DF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CompatabilityRulePackerTests", "..\SegregatedPackerTests\CompatabilityRulePackerTests.csproj", "{462ECF24-A288-4BBE-866E-FFB07C635575}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CompatabilityRulePackerTests", "..\CompatabilityRulePackerTests\CompatabilityRulePackerTests.csproj", "{462ECF24-A288-4BBE-866E-FFB07C635575}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
