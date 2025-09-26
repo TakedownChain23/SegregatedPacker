@@ -1,15 +1,15 @@
-using SegregatedPacker;
+using CompatabilityRulePacker;
 
-namespace SegregatedPackerTests
+namespace CompatabilityRulePackerTests
 {
     public class PackerTests
     {
         static readonly int[] items = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
-        [TestCaseSource(nameof(PackSegregatedItemsTestCases))]
-        public void PackSegregatedItemsTest(Func<int, int, bool> itemsAreCompatable, int[] expectedUnassignedItems, int expectedContainerCount)
+        [TestCaseSource(nameof(PackItemsWithCompatabilityRulesTestCases))]
+        public void PackItemsWithCompatabilityRulesTest(Func<int, int, bool> itemsAreCompatable, int[] expectedUnassignedItems, int expectedContainerCount)
         {
-            (var containers, var unassignedItems) = Packer.PackSegregatedItems(items, itemsAreCompatable);
+            (var containers, var unassignedItems) = Packer.PackItemsWithCompatabilityRules(items, itemsAreCompatable);
 
             Assert.That(unassignedItems, Is.EquivalentTo(expectedUnassignedItems));
             Assert.That(containers, Has.Count.EqualTo(expectedContainerCount));
@@ -27,7 +27,7 @@ namespace SegregatedPackerTests
             }
         }
 
-        public static IEnumerable<TestCaseData> PackSegregatedItemsTestCases
+        public static IEnumerable<TestCaseData> PackItemsWithCompatabilityRulesTestCases
         {
             get
             {
@@ -62,7 +62,7 @@ namespace SegregatedPackerTests
                 ).SetName("All incompatible with one item - {2} Container(s)");
 
                 yield return new TestCaseData(
-                    (int i1, int i2) => (i1 / 2 == i2 / 2) && Math.Abs(i1 - i2) == 1,
+                    (int i1, int i2) => i1 / 2 == i2 / 2 && Math.Abs(i1 - i2) == 1,
                     Array.Empty<int>(),
                     5
                 ).SetName("Adjacent pairs only - {2} Container(s)");

@@ -1,8 +1,8 @@
-﻿namespace SegregatedPacker
+﻿namespace CompatabilityRulePacker
 {
     public static class Packer
     {
-        public static (List<List<T>> containers, List<T> unassignedItems) PackSegregatedItems<T>(IEnumerable<T> items, Func<T, T, bool> itemsAreCompatible, int maxContainers = 100)
+        public static (List<List<T>> containers, List<T> unassignedItems) PackItemsWithCompatabilityRules<T>(IEnumerable<T> items, Func<T, T, bool> itemsAreCompatible, int maxContainers = 100)
             where T : notnull
         {
             Dictionary<T, List<T>> incompatibleItemsForItem = [];
@@ -11,25 +11,25 @@
 
             if (!items.Any()) return ([], []);
 
-            List<T> itemsRequiringSegregation = [];
-            List<T> itemsNotRequiringSegregation = [];
+            List<T> itemsWithCompatabilityRules = [];
+            List<T> itemsWithoutCompatabilityRules = [];
             foreach (var item in items)
             {
                 var incompatibleItems = items.Where(i => !itemsAreCompatible(i, item));
                 if (incompatibleItems.Any())
                 {
-                    itemsRequiringSegregation.Add(item);
+                    itemsWithCompatabilityRules.Add(item);
                 }
                 else
                 {
-                    itemsNotRequiringSegregation.Add(item);
+                    itemsWithoutCompatabilityRules.Add(item);
                 }
 
                 assignedContainerForItem[item] = null;
                 incompatibleItemsForItem[item] = [.. incompatibleItems];
             }
 
-            foreach (var item in itemsRequiringSegregation)
+            foreach (var item in itemsWithCompatabilityRules)
             {
                 if (assignedContainerForItem[item] == null)
                 {
@@ -61,7 +61,7 @@
                 result.Add([]);
             }
 
-            foreach (var item in itemsRequiringSegregation)
+            foreach (var item in itemsWithCompatabilityRules)
             {
                 var assignedContainer = assignedContainerForItem[item];
                 if (assignedContainer is int container)
@@ -70,7 +70,7 @@
                 }
             }
 
-            return (result, itemsNotRequiringSegregation);
+            return (result, itemsWithoutCompatabilityRules);
 
             int GetLowestValidContainer(T item, int maxContainers)
             {
