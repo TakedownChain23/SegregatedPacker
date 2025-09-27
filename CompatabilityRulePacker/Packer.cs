@@ -1,89 +1,84 @@
-﻿namespace CompatabilityRulePacker
+﻿using CompatabilityRulePacker.Model;
+
+namespace CompatabilityRulePacker
 {
     public static class Packer
     {
-        public static (List<List<T>> containers, List<T> unassignedItems) PackItemsWithCompatabilityRules<T>(IEnumerable<T> items, Func<T, T, bool> itemsAreCompatible, int maxContainers = 100)
-            where T : notnull
+        public static (T[][] bins, T[] unassignedItems) PackItemsWithCompatabilityRules<T>(IEnumerable<T> items, Func<T, T, bool> itemsAreCompatible, int maxBins = 100)
         {
-            Dictionary<T, List<T>> incompatibleItemsForItem = [];
-            Dictionary<T, int?> assignedContainerForItem = [];
-            var maxContainer = 0;
+            Node<T>[] incompatabilityGraphNodes = [..items.Select(i => new Node<T> { Value = i })];
 
-            if (!items.Any()) return ([], []);
+            AddIncompatibilityConnectionsToGraph(incompatabilityGraphNodes, itemsAreCompatible);
 
-            List<T> itemsWithCompatabilityRules = [];
-            List<T> itemsWithoutCompatabilityRules = [];
-            foreach (var item in items)
+            foreach (var node in incompatabilityGraphNodes.Where(n => n.IncompatableNodes.Count != 0))
             {
-                var incompatibleItems = items.Where(i => !itemsAreCompatible(i, item));
-                if (incompatibleItems.Any())
+                if (node.AssignedBin == null)
                 {
-                    itemsWithCompatabilityRules.Add(item);
+                    AssignBinsToConnectedNodesInIncompatibilityGraph(node, maxBins);
                 }
-                else
-                {
-                    itemsWithoutCompatabilityRules.Add(item);
-                }
-
-                assignedContainerForItem[item] = null;
-                incompatibleItemsForItem[item] = [.. incompatibleItems];
             }
 
-            foreach (var item in itemsWithCompatabilityRules)
+            var bins = incompatabilityGraphNodes.Where(n => n.AssignedBin != null)
+                .GroupBy(n => n.AssignedBin)
+                .Select(g => g.Select(n => n.Value).ToArray())
+                .ToArray();
+
+            var unassignedItems = incompatabilityGraphNodes.Where(n => n.AssignedBin == null)
+                .Select(n => n.Value)
+                .ToArray();
+
+            return (bins, unassignedItems);
+        }
+
+        static void AddIncompatibilityConnectionsToGraph<T>(Node<T>[] graphNodes, Func<T, T, bool> itemsAreCompatible)
+        {
+            for (var i = 0; i < graphNodes.Length; i++)
             {
-                if (assignedContainerForItem[item] == null)
+                for (var j = i + 1; j < graphNodes.Length; j++)
                 {
-                    var itemQueue = new Queue<T>();
+                    var node1 = graphNodes[i];
+                    var node2 = graphNodes[j];
 
-                    assignedContainerForItem[item] = 0;
-                    itemQueue.Enqueue(item);
-                    while (itemQueue.Count > 0)
+                    if (!itemsAreCompatible(node1.Value, node2.Value))
                     {
-                        var nextItem = itemQueue.Dequeue();
-
-                        var incompatableItems = incompatibleItemsForItem[nextItem];
-                        foreach (var incompatableItem in incompatableItems.Where(i => assignedContainerForItem[i] == null))
-                        {
-                            var lowestValidContainer = GetLowestValidContainer(incompatableItem, maxContainers);
-                            
-                            assignedContainerForItem[incompatableItem] = lowestValidContainer;
-                            if (maxContainer < lowestValidContainer) maxContainer = lowestValidContainer;
-
-                            itemQueue.Enqueue(incompatableItem);
-                        }
+                        node1.IncompatableNodes.Add(node2);
+                        node2.IncompatableNodes.Add(node1);
                     }
                 }
             }
+        }
 
-            var result = new List<List<T>>(maxContainer);
-            for (int i = 0; i <= maxContainer; i++)
-            {
-                result.Add([]);
-            }
+        static void AssignBinsToConnectedNodesInIncompatibilityGraph<T>(Node<T> startingNode, int maxBins)
+        {
+            startingNode.AssignedBin = 0;
+            Queue<Node<T>> nodeQueue = [];
+            nodeQueue.Enqueue(startingNode);
 
-            foreach (var item in itemsWithCompatabilityRules)
+            while (nodeQueue.Count > 0)
             {
-                var assignedContainer = assignedContainerForItem[item];
-                if (assignedContainer is int container)
+                var node = nodeQueue.Dequeue();
+                foreach (var incompatableNode in node.IncompatableNodes.Where(n => n.AssignedBin == null))
                 {
-                    result[container].Add(item);
+                    incompatableNode.AssignedBin = GetLowestValidBin(incompatableNode, maxBins);
+                    nodeQueue.Enqueue(incompatableNode);
+                }
+            }
+        }
+
+        static int GetLowestValidBin<T>(Node<T> node, int maxBins)
+        {
+            var incompatibleBins = node.IncompatableNodes.Select(n => n.AssignedBin).Distinct();
+            var lowestValidBin = 0;
+            while (incompatibleBins.Contains(lowestValidBin))
+            {
+                lowestValidBin++;
+                if (lowestValidBin >= maxBins)
+                {
+                    throw new Exception("Items require too many bins. Increase maxBins if required.");
                 }
             }
 
-            return (result, itemsWithoutCompatabilityRules);
-
-            int GetLowestValidContainer(T item, int maxContainers)
-            {
-                var incompatibleContainers = incompatibleItemsForItem[item].Select(i => assignedContainerForItem[i]).Where(c => c != null).Distinct();
-                var container = 0;
-                while (incompatibleContainers.Contains(container))
-                {
-                    container++;
-                    if (container >= maxContainers) throw new Exception("Items require too many containers. Increase maxContainers if required.");
-                }
-
-                return container;
-            }
+            return lowestValidBin;
         }
     }
 }
